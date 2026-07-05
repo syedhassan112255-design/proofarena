@@ -1,16 +1,18 @@
-// index.mjs — ProofPicks autonomous agent loop.
+// index.mjs — ProofArena: two agents, one feed, settled by proof.
 //
-// Every TICK_MS: refresh fixtures, evaluate every tracked market against the
-// strategy, and act on any signal. In PAPER mode picks are only logged +
-// persisted to state.json; in LIVE mode they are additionally committed
-// on-chain (commit_pick) and later settled against TxLINE Merkle proofs
-// (settle_pick). The agent runs unattended under pm2 — no human input.
+// Every TICK_MS the shared signal detector scans all tracked markets. When
+// steam fires, a DUEL is created: Agent A "Steamer" backs the move, Agent B
+// "Fader" backs the opposite side. Each sizes its own stake from its own
+// bankroll (see strategy.mjs for the full math). In PAPER mode duels are
+// logged + persisted; in LIVE mode both positions are committed on-chain
+// before kickoff and settled by the TxLINE Merkle proof afterwards.
+// The agents run unattended under pm2 — no human input, ever.
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
-import { loadEnv, fetchFixtures, createOddsBook, streamOdds, marketId, DEMARGINED_BOOK_ID } from "./feed.mjs";
-import { evaluateMarket, PARAMS } from "./strategy.mjs";
+import { loadEnv, fetchFixtures, createOddsBook, streamOdds, DEMARGINED_BOOK_ID } from "./feed.mjs";
+import { evaluateMarket, buildDuel, PARAMS } from "./strategy.mjs";
 
-const MODE = process.env.PP_MODE ?? "paper"; // "paper" | "live"
+const MODE = process.env.PA_MODE ?? "paper"; // "paper" | "live"
 const TICK_MS = 60_000;
 const DATA_DIR = new URL("../data", import.meta.url).pathname;
 const STATE_PATH = `${DATA_DIR}/state.json`;
@@ -19,9 +21,15 @@ mkdirSync(DATA_DIR, { recursive: true });
 
 const state = existsSync(STATE_PATH)
   ? JSON.parse(readFileSync(STATE_PATH, "utf8"))
-  : { bankroll: PARAMS.START_BANKROLL, picks: [], startedAt: Date.now() };
-const openPicks = new Set(state.picks.filter((p) => p.status === "open").map((p) => p.templateKey));
-const allPickKeys = new Set(state.picks.map((p) => p.templateKey));
+  : {
+      startedAt: Date.now(),
+      agents: {
+        steamer: { name: "Agent A — Steamer", philosophy: "momentum / closing-line value", bankroll: PARAMS.START_BANKROLL, wins: 0, losses: 0 },
+        fader: { name: "Agent B — Fader", philosophy: "mean-reversion / overreaction", bankroll: PARAMS.START_BANKROLL, wins: 0, losses: 0 },
+      },
+      duels: [],
+    };
+const duelKeys = new Set(state.duels.map((d) => d.templateKey));
 
 const save = () => writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
 const log = (...a) => console.log(new Date().toISOString(), ...a);
@@ -30,7 +38,6 @@ const env = loadEnv();
 const book = createOddsBook();
 let fixtures = new Map();
 
-// live odds -> book (with inRunning carried onto the trail for the gate)
 streamOdds(env, (msg) => {
   const r = book.apply(msg);
   if (r && msg.BookmakerId === DEMARGINED_BOOK_ID) {
@@ -61,43 +68,62 @@ async function tick() {
         mid,
         fixture,
         now,
-        openPicks: new Set([...openPicks, ...allPickKeys]),
+        openPicks: duelKeys,
       });
-      if (signal) await placePick(signal);
+      if (signal) await openDuel(signal, fixture);
     }
   }
-  log(`tick: ${book.fixtures().length} fixtures, ${evaluated} markets evaluated, bankroll ${state.bankroll.toFixed(0)}u, picks ${state.picks.length}`);
+  const a = state.agents.steamer, b = state.agents.fader;
+  log(`tick: ${book.fixtures().length} fixtures, ${evaluated} markets | ` +
+      `Steamer ${a.bankroll.toFixed(0)}u (${a.wins}W-${a.losses}L) vs Fader ${b.bankroll.toFixed(0)}u (${b.wins}W-${b.losses}L) | duels ${state.duels.length}`);
   save();
 }
 
-async function placePick(signal) {
-  const stake = Math.round(state.bankroll * signal.stakeFraction);
-  if (stake < 1) return;
-  const pick = {
-    ...signal,
-    stake,
-    committedAt: Date.now(),
-    mode: MODE,
-    status: "open",
-    commitTx: null,
-    settleTx: null,
-    outcome: null,
-  };
+async function openDuel(signal, fixture) {
+  const duel = buildDuel(signal, {
+    steamerBankroll: state.agents.steamer.bankroll,
+    faderBankroll: state.agents.fader.bankroll,
+  }, fixture);
+  if (duel.steamer.stake < 1 || duel.fader.stake < 1) return;
+
+  duel.openedAt = Date.now();
+  duel.mode = MODE;
+  duel.status = "open";
+  duel.commitTx = null;
+  duel.settleTx = null;
+  duel.predicateTrue = null; // set at settlement: did the steamed statement happen?
+
   if (MODE === "live") {
-    // on-chain commitment happens here (chain.mjs) — wired in once the
-    // proofpicks program is deployed.
-    const { commitPick } = await import("./chain.mjs");
-    pick.commitTx = await commitPick(pick);
+    const { commitDuel } = await import("./chain.mjs");
+    duel.commitTx = await commitDuel(duel);
   }
-  state.picks.push(pick);
-  openPicks.add(pick.templateKey);
-  allPickKeys.add(pick.templateKey);
-  log(`📌 PICK ${pick.label} @ ${(pick.oddsMilli / 1000).toFixed(2)} — stake ${stake}u ` +
-      `(consensus ${(pick.consensusFrom * 100).toFixed(1)}%→${(pick.consensusTo * 100).toFixed(1)}%, ` +
-      `belief ${(pick.belief * 100).toFixed(1)}%, kelly ${pick.kellyRaw.toFixed(3)})${pick.commitTx ? " tx " + pick.commitTx : ""}`);
+  state.duels.push(duel);
+  duelKeys.add(duel.templateKey);
+  log(`⚔️  DUEL on "${duel.steamer.label}" | ` +
+      `Steamer ${duel.steamer.stake}u @ ${(duel.steamer.oddsMilli / 1000).toFixed(2)} vs ` +
+      `Fader ${duel.fader.stake}u @ ${(duel.fader.oddsMilli / 1000).toFixed(2)} ` +
+      `(consensus ${(duel.signal.consensusFrom * 100).toFixed(1)}%→${(duel.signal.consensusTo * 100).toFixed(1)}%)` +
+      (duel.commitTx ? ` tx ${duel.commitTx}` : ""));
   save();
 }
 
-log(`ProofPicks agent starting — mode=${MODE}, bankroll=${state.bankroll}u, ${state.picks.length} historical picks`);
+// Settlement: grade both sides of finished duels. Paper mode uses the same
+// TxLINE stat-validation proof data (fetched off-chain); live mode submits it
+// to the proofarena program which CPIs validate_stat. Wired via settle.mjs
+// once the scores/seq plumbing lands.
+async function settleTick() {
+  const due = state.duels.filter((d) => d.status === "open" && Date.now() > d.kickoff + 165 * 60_000);
+  if (!due.length) return;
+  try {
+    const { settleDuels } = await import("./settle.mjs");
+    await settleDuels(due, state, { mode: MODE, env, log });
+    save();
+  } catch (e) {
+    log("settle pass failed:", e.message);
+  }
+}
+
+log(`ProofArena starting — mode=${MODE} | ${state.agents.steamer.name} vs ${state.agents.fader.name} | ${state.duels.length} historical duels`);
 await tick();
 setInterval(tick, TICK_MS);
+setInterval(settleTick, 5 * 60_000);

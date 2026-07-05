@@ -1,17 +1,32 @@
-// strategy.mjs — deterministic pick engine.
+// strategy.mjs — deterministic duel engine.
 //
-// ProofPicks runs ONE strategy, stated here in full so every pick is
-// reproducible from the public odds trail:
+// ProofArena pits two autonomous agents with OPPOSITE market philosophies
+// against each other on the same TxLINE feed. Both are stated here in full,
+// so every duel is reproducible from the public odds trail.
 //
-//   STEAM-FOLLOWING WITH PROVABLE SETTLEMENT
-//   ----------------------------------------
+//   THE SHARED SIGNAL: "STEAM"
+//   --------------------------
 //   The TxLINE demargined consensus (bookmaker 10021) is the de-vigged fair
 //   probability aggregated from sharp global books. When that consensus moves
-//   decisively toward one outcome before kickoff, it is (by construction) the
-//   footprint of informed money — retail noise is demargined and outlier-
-//   filtered away upstream. The classic closing-line-value result says prices
-//   drift toward the sharp side, so entering after a confirmed move retains
-//   positive expected value versus the eventual close.
+//   decisively toward one outcome before kickoff, something happened — the
+//   two agents just disagree about WHAT:
+//
+//   AGENT A — "STEAMER" (momentum). The move is the footprint of informed
+//   money; the classic closing-line-value result says prices keep drifting
+//   toward the sharp side. Backs the steamed side, believing the drift is
+//   CONTINUATION_LAMBDA fractionally incomplete:
+//       p̂_A = p1 + λ·(p1 − p0)          (clamped to [0.01, 0.99])
+//
+//   AGENT B — "FADER" (mean-reversion). Markets overreact to news and team
+//   sheets; a large fast move overshoots fair value and reverts. Backs the
+//   OPPOSITE side, believing the same fraction of the move was noise:
+//       p̂_B(steamed side) = p1 − λ·(p1 − p0)
+//       ⇒ belief in own (complement) side = 1 − p̂_B(steamed side)
+//
+//   Each agent sizes independently with fractional Kelly from its OWN
+//   bankroll at the fair consensus price of its side. One Merkle proof
+//   settles the duel — exactly one agent is right, every time, on-chain.
+//   Over 104 matches the better philosophy wins the tournament.
 //
 //   SIGNAL (all conditions must hold, evaluated on the consensus trail):
 //     1. window: the last STEAM_WINDOW_MS of consensus updates, ≥ MIN_POINTS.
@@ -154,4 +169,67 @@ function pickLabel(template, sideName, fixture) {
   const what = template.kind === "TOTAL_GOALS" ? "goals" : "corners";
   const dir = /under|part2|2/i.test(sideName ?? "") ? "Under" : "Over";
   return `${dir} ${template.line} total ${what} (${fixture.p1} v ${fixture.p2})`;
+}
+
+function complementLabel(template, steamedSideName, fixture) {
+  if (template.kind === "RESULT") {
+    const steamedTeam = /part1|1/.test(steamedSideName ?? "") ? fixture.p1 : fixture.p2;
+    const other = steamedTeam === fixture.p1 ? fixture.p2 : fixture.p1;
+    return `Draw or ${other} (${fixture.p1} v ${fixture.p2})`;
+  }
+  const what = template.kind === "TOTAL_GOALS" ? "goals" : "corners";
+  const dir = /under|part2|2/i.test(steamedSideName ?? "") ? "Over" : "Under";
+  return `${dir} ${template.line} total ${what} (${fixture.p1} v ${fixture.p2})`;
+}
+
+// ---------------------------------------------------------------- the duel
+
+// Turn one signal into two opposing, independently-sized positions.
+// The settlement predicate P is the template's statement about the steamed
+// side ("team X wins" / "total > line" when Over steamed, etc.). The STEAMER
+// backs P; the FADER backs ¬P. One validate_stat proof grades both.
+export function buildDuel(signal, { steamerBankroll, faderBankroll }, fixture) {
+  const p = PARAMS;
+  const p1 = signal.consensusTo;
+  const p0 = signal.consensusFrom;
+
+  // --- STEAMER: backs the steamed side at fair price p1
+  const steamerStake = Math.round(steamerBankroll * signal.stakeFraction);
+
+  // --- FADER: backs the complement at fair price (1 − p1)
+  const beliefFaderOwn = Math.min(0.99, Math.max(0.01, 1 - (p1 - p.CONTINUATION_LAMBDA * (p1 - p0))));
+  const bF = 1 / (1 - p1);
+  const bBarF = bF - 1;
+  const fStarF = (bBarF * beliefFaderOwn - (1 - beliefFaderOwn)) / bBarF;
+  const faderFraction = Math.min(p.KELLY_FRACTION * Math.max(fStarF, 0), p.MAX_STAKE_PCT);
+  const faderStake = Math.round(faderBankroll * faderFraction);
+
+  return {
+    templateKey: signal.templateKey,
+    fixtureId: signal.fixtureId,
+    template: signal.template,
+    kickoff: signal.kickoff,
+    signal: {
+      window: signal.window,
+      consensusFrom: p0,
+      consensusTo: p1,
+      steamedSide: signal.sideName,
+    },
+    steamer: {
+      label: signal.label,
+      backsPredicate: true,
+      oddsMilli: Math.round((1 / p1) * 1000),
+      belief: signal.belief,
+      kellyRaw: signal.kellyRaw,
+      stake: steamerStake,
+    },
+    fader: {
+      label: complementLabel(signal.template, signal.sideName, fixture),
+      backsPredicate: false,
+      oddsMilli: Math.round(bF * 1000),
+      belief: beliefFaderOwn,
+      kellyRaw: fStarF,
+      stake: faderStake,
+    },
+  };
 }
