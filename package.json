@@ -1,0 +1,7 @@
+{
+  "name": "proofpicks",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": { "agent": "node agent/index.mjs" }
+}
