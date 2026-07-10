@@ -1,10 +1,12 @@
 node_modules/
 .env*
-*.json.key
+operator-key.json
 wallet*.json
 keypair*.json
+data/
 out/
 dist/
 target/
 .DS_Store
-operator-key.json
+site/assets/*.mp4
+site/assets/*.jpg
