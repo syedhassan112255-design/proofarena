@@ -7,3 +7,4 @@ out/
 dist/
 target/
 .DS_Store
+operator-key.json

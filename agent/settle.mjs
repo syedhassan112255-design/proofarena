@@ -17,7 +17,7 @@ function predicateMatches(duel, market) {
   return false;
 }
 
-export async function settleDuels(due, state, { mode, log }) {
+export async function settleDuels(due, state, { mode, log, applyResult }) {
   let resolved;
   try {
     const r = await fetch(PROOFBALL_API);
@@ -38,23 +38,7 @@ export async function settleDuels(due, state, { mode, log }) {
     const steamedWon = refOutcomeForDuel(duel, ref);
     if (steamedWon === null) continue; // ambiguous reference (e.g. other team's
     // RESULT market can't distinguish a draw) — wait for a same-side reference
-    duel.predicateTrue = steamedWon;
-    duel.status = "settled";
-    duel.settledAt = Date.now();
-    duel.settledVia = `paper:proofball:${ref.marketKey ?? "?"}`;
-
-    const s = state.agents.steamer, f = state.agents.fader;
-    if (steamedWon) {
-      s.bankroll += duel.steamer.stake * (duel.steamer.oddsMilli / 1000 - 1);
-      f.bankroll -= duel.fader.stake;
-      s.wins++; f.losses++;
-    } else {
-      s.bankroll -= duel.steamer.stake;
-      f.bankroll += duel.fader.stake * (duel.fader.oddsMilli / 1000 - 1);
-      f.wins++; s.losses++;
-    }
-    log(`⚖️  SETTLED "${duel.steamer.label}" — ${steamedWon ? "STEAMER" : "FADER"} wins ` +
-        `(via proof-backed ref ${duel.settledVia}) | Steamer ${s.bankroll.toFixed(0)}u vs Fader ${f.bankroll.toFixed(0)}u`);
+    applyResult(duel, steamedWon, null, `paper:proofball:${ref.marketKey ?? "?"}`);
   }
 }
 

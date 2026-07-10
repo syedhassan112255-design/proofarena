@@ -9,10 +9,10 @@
 // The agents run unattended under pm2 — no human input, ever.
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
-import { loadEnv, fetchFixtures, createOddsBook, streamOdds, DEMARGINED_BOOK_ID } from "./feed.mjs";
+import { loadEnv, fetchFixtures, createOddsBook, streamOdds, streamScores, DEMARGINED_BOOK_ID } from "./feed.mjs";
 import { evaluateMarket, buildDuel, PARAMS } from "./strategy.mjs";
 
-const MODE = process.env.PA_MODE ?? "paper"; // "paper" | "live"
+const MODE = process.env.PA_MODE ?? "paper"; // "paper" | "live" // "paper" | "live"
 const TICK_MS = 60_000;
 const DATA_DIR = new URL("../data", import.meta.url).pathname;
 const STATE_PATH = `${DATA_DIR}/state.json`;
@@ -46,6 +46,12 @@ streamOdds(env, (msg) => {
   }
 });
 
+// live scores: the final feed seq per fixture is what unlocks proof fetching
+const feedSeq = new Map();
+streamScores(env, (rec) => {
+  if (rec?.fixtureId && rec.seq != null) feedSeq.set(rec.fixtureId, rec.seq);
+});
+
 async function tick() {
   try {
     fixtures = await fetchFixtures(env);
@@ -70,7 +76,13 @@ async function tick() {
         now,
         openPicks: duelKeys,
       });
-      if (signal) await openDuel(signal, fixture);
+      if (signal) {
+        try {
+          await openDuel(signal, fixture);
+        } catch (e) {
+          log(`open duel failed for ${signal.templateKey} (will retry next tick):`, e.message);
+        }
+      }
     }
   }
   const a = state.agents.steamer, b = state.agents.fader;
@@ -107,20 +119,56 @@ async function openDuel(signal, fixture) {
   save();
 }
 
-// Settlement: grade both sides of finished duels. Paper mode uses the same
-// TxLINE stat-validation proof data (fetched off-chain); live mode submits it
-// to the proofarena program which CPIs validate_stat. Wired via settle.mjs
-// once the scores/seq plumbing lands.
+// Settlement: grade both sides of finished duels.
+// LIVE mode: submit the real Merkle proof to the proofarena program
+// (settle_duel CPIs validate_stat) — the chain records the winner.
+// PAPER mode / no on-chain key: grade against proof-backed reference markets.
 async function settleTick() {
   const due = state.duels.filter((d) => d.status === "open" && Date.now() > d.kickoff + 165 * 60_000);
   if (!due.length) return;
   try {
-    const { settleDuels } = await import("./settle.mjs");
-    await settleDuels(due, state, { mode: MODE, env, log });
+    for (const duel of due.filter((d) => d.mode === "live" && d.duelKey)) {
+      const seq = feedSeq.get(duel.fixtureId);
+      if (seq == null) continue; // no feed data seen for this fixture yet
+      try {
+        const { settleDuelOnChain } = await import("./chain.mjs");
+        const { sig, predicateTrue } = await settleDuelOnChain(duel, seq);
+        applyResult(duel, predicateTrue, sig, `onchain:seq${seq}`);
+      } catch (e) {
+        log(`settle on-chain failed for ${duel.duelKey} (will retry):`, e.message);
+      }
+    }
+    const paperDue = due.filter((d) => d.status === "open" && !(d.mode === "live" && d.duelKey));
+    if (paperDue.length) {
+      const { settleDuels } = await import("./settle.mjs");
+      await settleDuels(paperDue, state, { mode: MODE, env, log, applyResult });
+    }
     save();
   } catch (e) {
     log("settle pass failed:", e.message);
   }
+}
+
+// One place where bankrolls and the W-L record move — used by both settle paths.
+function applyResult(duel, steamedWon, sig, via) {
+  duel.predicateTrue = steamedWon;
+  duel.status = "settled";
+  duel.settledAt = Date.now();
+  duel.settleTx = sig ?? null;
+  duel.settledVia = via;
+  const s = state.agents.steamer, f = state.agents.fader;
+  if (steamedWon) {
+    s.bankroll += duel.steamer.stake * (duel.steamer.oddsMilli / 1000 - 1);
+    f.bankroll -= duel.fader.stake;
+    s.wins++; f.losses++;
+  } else {
+    s.bankroll -= duel.steamer.stake;
+    f.bankroll += duel.fader.stake * (duel.fader.oddsMilli / 1000 - 1);
+    f.wins++; s.losses++;
+  }
+  log(`⚖️  SETTLED "${duel.steamer.label}" — ${steamedWon ? "STEAMER" : "FADER"} wins (${via})` +
+      (sig ? ` tx ${sig}` : "") +
+      ` | Steamer ${s.bankroll.toFixed(0)}u vs Fader ${f.bankroll.toFixed(0)}u`);
 }
 
 log(`ProofArena starting — mode=${MODE} | ${state.agents.steamer.name} vs ${state.agents.fader.name} | ${state.duels.length} historical duels`);
