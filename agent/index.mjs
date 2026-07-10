@@ -9,11 +9,13 @@
 // The agents run unattended under pm2 — no human input, ever.
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "fs";
+import { createServer } from "http";
 import { loadEnv, fetchFixtures, createOddsBook, streamOdds, streamScores, DEMARGINED_BOOK_ID } from "./feed.mjs";
 import { evaluateMarket, buildDuel, PARAMS } from "./strategy.mjs";
 
-const MODE = process.env.PA_MODE ?? "paper"; // "paper" | "live" // "paper" | "live"
+const MODE = process.env.PA_MODE ?? "paper"; // "paper" | "live"
 const TICK_MS = 60_000;
+const HTTP_PORT = Number(process.env.PA_PORT ?? 8802);
 const DATA_DIR = new URL("../data", import.meta.url).pathname;
 const STATE_PATH = `${DATA_DIR}/state.json`;
 
@@ -170,6 +172,24 @@ function applyResult(duel, steamedWon, sig, via) {
       (sig ? ` tx ${sig}` : "") +
       ` | Steamer ${s.bankroll.toFixed(0)}u vs Fader ${f.bankroll.toFixed(0)}u`);
 }
+
+// Public read-only state for the arena dashboard.
+createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (req.url?.startsWith("/api/arena")) {
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({
+      mode: MODE,
+      programId: "6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L",
+      generated: Date.now(),
+      agents: state.agents,
+      duels: state.duels.slice(-50),
+    }));
+    return;
+  }
+  res.statusCode = 404;
+  res.end("proofarena agent");
+}).listen(HTTP_PORT, () => log(`arena state API on :${HTTP_PORT}`));
 
 log(`ProofArena starting — mode=${MODE} | ${state.agents.steamer.name} vs ${state.agents.fader.name} | ${state.duels.length} historical duels`);
 await tick();
