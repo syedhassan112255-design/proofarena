@@ -132,6 +132,10 @@
   .bout .verdict.s { color: var(--steam); }
   .bout .verdict.f { color: var(--fade); }
   .bout.settled { }
+  .bout.demo { border-color: rgba(61, 255, 140, 0.35); }
+  .bout.demo .q::before { content: '⚡ SHOWCASE · '; color: var(--steam); font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; }
+  .bout.void { opacity: 0.62; }
+  .bout.void .q { text-decoration: line-through; text-decoration-color: rgba(242,244,241,0.4); text-decoration-thickness: 1px; }
   .bout .beliefs { color: rgba(242,244,241,0.35); }
   .empty-card { border: 1px dashed var(--rule); border-radius: 4px; padding: 34px; text-align: center; color: var(--chalk-dim); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.9; }
   .empty-card .doto { color: var(--steam); font-size: 15px; }
@@ -289,7 +293,7 @@
 </footer>
 
 <script>
-const SNAPSHOT = {"mode":"live","programId":"6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L","generated":1783701447108,"agents":{"steamer":{"name":"Agent A — Steamer","philosophy":"momentum / closing-line value","bankroll":10000,"wins":0,"losses":0},"fader":{"name":"Agent B — Fader","philosophy":"mean-reversion / overreaction","bankroll":10000,"wins":0,"losses":0}},"duels":[{"templateKey":"18209181:TOTAL_GOALS2.5","fixtureId":18209181,"template":{"kind":"TOTAL_GOALS","line":2.5},"kickoff":1783627200000,"signal":{"window":{"from":1783622449149,"to":1783625109064,"points":119,"movePts":3.1240000000000023},"consensusFrom":0.47869999999999996,"consensusTo":0.50994,"steamedSide":"over"},"steamer":{"label":"Over 2.5 total goals (France v Morocco)","backsPredicate":true,"oddsMilli":1961,"belief":0.5255599999999999,"kellyRaw":0.0318736481247193,"stake":80},"fader":{"label":"Under 2.5 total goals (France v Morocco)","backsPredicate":false,"oddsMilli":2041,"belief":0.50568,"kellyRaw":0.030631054633878357,"stake":77},"openedAt":1783625116607,"mode":"paper","status":"open","commitTx":null,"settleTx":null,"predicateTrue":null}]};
+const SNAPSHOT = {"mode":"live","programId":"6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L","generated":1784026810222,"agents":{"steamer":{"name":"Agent A — Steamer","philosophy":"momentum / closing-line value","bankroll":9920,"wins":0,"losses":1},"fader":{"name":"Agent B — Fader","philosophy":"mean-reversion / overreaction","bankroll":10080.157,"wins":1,"losses":0}},"duels":[{"templateKey":"18209181:TOTAL_GOALS2.5","fixtureId":18209181,"template":{"kind":"TOTAL_GOALS","line":2.5},"kickoff":1783627200000,"signal":{"window":{"from":1783622449149,"to":1783625109064,"points":119,"movePts":3.1240000000000023},"consensusFrom":0.47869999999999996,"consensusTo":0.50994,"steamedSide":"over"},"steamer":{"label":"Over 2.5 total goals (France v Morocco)","backsPredicate":true,"oddsMilli":1961,"belief":0.5255599999999999,"kellyRaw":0.0318736481247193,"stake":80},"fader":{"label":"Under 2.5 total goals (France v Morocco)","backsPredicate":false,"oddsMilli":2041,"belief":0.50568,"kellyRaw":0.030631054633878357,"stake":77},"openedAt":1783625116607,"mode":"paper","status":"settled","commitTx":null,"settleTx":null,"predicateTrue":false,"settledAt":1784026768044,"settledVia":"paper:proof-record:seq1115"},{"templateKey":"18213979:TOTAL_GOALS2.5","fixtureId":18213979,"template":{"kind":"TOTAL_GOALS","line":2.5},"kickoff":1783803600000,"signal":{"window":{"from":1783798323184,"to":1783800984673,"points":76,"movePts":3.6459999999999937},"consensusFrom":0.41017000000000003,"consensusTo":0.44662999999999997,"steamedSide":"under"},"steamer":{"label":"Under 2.5 total goals (Norway v England)","backsPredicate":true,"oddsMilli":2239,"belief":0.46485999999999994,"kellyRaw":0.032943600122883415,"stake":82},"fader":{"label":"Over 2.5 total goals (Norway v England)","backsPredicate":false,"oddsMilli":1807,"belief":0.5716,"kellyRaw":0.04081678346729951,"stake":102},"openedAt":1783800991462,"mode":"live","status":"void","commitTx":"3L2MUBnx2wx4WwJWT8GVhpGYTMH93kLpm4FEpFKmTbn3FTg8uEvMS6dMwsJ94Su2yTyZZ6sDb77c1WtHD67T5JZd","settleTx":null,"predicateTrue":null,"seed":1783800992075,"duelKey":"CxhCbgSv2vBZRMSZLoU3GNtYwo4nNDyppt92dC4FKvtw","voidReason":"Predicate pinned TxLINE period code 4 (full time), but 2026 knockout records consolidate to period 0 — no matching proof can exist. See docs/FEEDBACK.md."},{"templateKey":"18213979:TOTAL_GOALS3.5","fixtureId":18213979,"template":{"kind":"TOTAL_GOALS","line":3.5},"kickoff":1783803600000,"signal":{"window":{"from":1783798588618,"to":1783801168234,"points":68,"movePts":3.5050000000000026},"consensusFrom":0.63654,"consensusTo":0.67159,"steamedSide":"under"},"steamer":{"label":"Under 3.5 total goals (Norway v England)","backsPredicate":true,"oddsMilli":1489,"belief":0.689115,"kellyRaw":0.05336317408117914,"stake":133},"fader":{"label":"Over 3.5 total goals (Norway v England)","backsPredicate":false,"oddsMilli":3045,"belief":0.345935,"kellyRaw":0.02609478997602707,"stake":65},"openedAt":1783801231415,"mode":"live","status":"void","commitTx":"2QCmELG3MmzraEpbhx6KK5pqPsJYBsTUvpp7y4pZDUKoB1zqbK3AcX7VpoD39vwtQMcZ6YqWZKjUjbVDVTFTrenP","settleTx":null,"predicateTrue":null,"seed":1783801231415,"duelKey":"BpZktLefMHuTtcQe8uzhxzd3uzfyUo9eJ4JuRfAwGPYy","voidReason":"Predicate pinned TxLINE period code 4 (full time), but 2026 knockout records consolidate to period 0 — no matching proof can exist. See docs/FEEDBACK.md."},{"templateKey":"18209181:DEMO_TOTAL_GOALS1.5","fixtureId":18209181,"template":{"kind":"TOTAL_GOALS","line":1.5},"kickoff":1789210768045,"signal":{"steamedSide":"over","consensusFrom":0.62,"consensusTo":0.66,"window":{"points":0,"movePts":0}},"steamer":{"label":"Over 1.5 total goals (France v Morocco · archived demo)","backsPredicate":true,"oddsMilli":1515,"belief":0.68,"kellyRaw":0.06,"stake":100},"fader":{"label":"Under 1.5 total goals (France v Morocco · archived demo)","backsPredicate":false,"oddsMilli":2941,"belief":0.38,"kellyRaw":0.05,"stake":60},"openedAt":1784026768045,"mode":"live","status":"settled","isDemo":true,"commitTx":"5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni","settleTx":"5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU","predicateTrue":true,"seed":1784026768045,"duelKey":"ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR","settledAt":1784026771166,"settledVia":"onchain:seq1115"}]};
 // same-origin via Vercel rewrite in production; direct VPS in local dev
 const API = location.protocol === 'https:' ? '/api/arena' : 'http://139.59.21.163:8802/api/arena';
 const pad = (n) => String(n).padStart(2, '0');
@@ -310,7 +314,7 @@ function explorer(pathOrAddr, isTx) {
 
 function boutEl(d) {
   const el = document.createElement('div');
-  el.className = 'bout' + (d.status === 'settled' ? ' settled' : '');
+  el.className = 'bout' + (d.status === 'settled' ? ' settled' : '') + (d.isDemo ? ' demo' : '') + (d.status === 'void' ? ' void' : '');
   const ko = new Date(d.kickoff).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
   const committed = d.openedAt ? new Date(d.openedAt).toISOString().slice(11, 19) + 'Z' : '—';
   let verdict = `<span class="verdict">AWAITING THE BELL · KO ${ko}</span>`;
@@ -318,8 +322,10 @@ function boutEl(d) {
     verdict = d.predicateTrue
       ? `<span class="verdict s">STEAMER WINS · proof verified</span>`
       : `<span class="verdict f">FADER WINS · proof verified</span>`;
+  } else if (d.status === 'void') {
+    verdict = `<span class="verdict" title="${(d.voidReason || '').replace(/"/g, '&quot;')}">NO CONTEST · predicate unprovable after a TxLINE feed change — see API feedback</span>`;
   } else if (Date.now() > d.kickoff) {
-    verdict = `<span class="verdict">FULL TIME · AWAITING PROOF</span>`;
+    verdict = `<span class="verdict">FULL TIME · AWAITING CONSOLIDATED PROOF</span>`;
   }
   const links = [];
   if (d.duelKey) links.push(`<a href="${explorer(d.duelKey)}" target="_blank" rel="noopener">duel account</a>`);

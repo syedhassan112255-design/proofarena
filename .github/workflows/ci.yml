@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  agent:
+    name: Check agent & scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax-check all Node modules
+        run: |
+          for f in agent/*.mjs scripts/*.mjs; do
+            [ -f "$f" ] && node --check "$f" && echo "ok $f"
+          done

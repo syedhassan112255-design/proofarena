@@ -5,9 +5,10 @@
 // settle: after full time, the TxLINE Merkle proof is submitted to settle_duel,
 // which CPIs into validate_stat; the proof decides the winner.
 //
-// Predicate encodings mirror ProofBall's battle-tested templates (goals keys 1/2,
-// corners 7/8, period 4 = full time). The DUEL predicate is always the STEAMED
-// side's statement, so `predicate_true == steamer wins` holds on-chain.
+// Predicate encodings: goals keys 1/2, corners 7/8, period 100 = TxLINE's
+// final-consolidated record (see duelPredicate note). The DUEL predicate is
+// always the STEAMED side's statement, so `predicate_true == steamer wins`
+// holds on-chain.
 
 import anchorPkg from "@coral-xyz/anchor";
 import { Connection, PublicKey, Keypair, ComputeBudgetProgram } from "@solana/web3.js";
@@ -34,8 +35,12 @@ export const PROGRAM_ID = program.programId.toBase58();
 
 // ---------------------------------------------------------------- predicate
 
-// Full-time period + base stat keys, exactly as ProofBall pins them.
-const P_FT = 4;
+// Final-consolidated period + base stat keys. TxLINE records evolve through
+// period codes as a match settles (7/9 in-play → 10/100 post-match → 0 once
+// fully archived). Every finished fixture we sampled converges to period 0,
+// so we pin 0: the terminal state that always eventually exists. Settlement
+// simply waits for consolidation (usually 1–3 days after full time).
+const P_FINAL = 0;
 const KEYS = { GOALS: [1, 2], CORNERS: [7, 8] };
 
 // The committed predicate is the steamed side's statement.
@@ -46,15 +51,15 @@ export function duelPredicate(duel) {
     const p1 = /part1|^1$/.test(steamed);
     const [a, b] = p1 ? KEYS.GOALS : [...KEYS.GOALS].reverse();
     // (steamed team goals − other team goals) > 0
-    return { statKeyA: a, periodA: P_FT, useTwoStats: true, statKeyB: b, periodB: P_FT, op: 1, threshold: 0, comparison: 0 };
+    return { statKeyA: a, periodA: P_FINAL, useTwoStats: true, statKeyB: b, periodB: P_FINAL, op: 1, threshold: 0, comparison: 0 };
   }
   const [a, b] = kind === "TOTAL_GOALS" ? KEYS.GOALS : KEYS.CORNERS;
   const under = /under/i.test(steamed);
   return under
     // steamed UNDER L.5  ⇒  total < ceil(L)  (integers: < 3 ⇔ under 2.5)
-    ? { statKeyA: a, periodA: P_FT, useTwoStats: true, statKeyB: b, periodB: P_FT, op: 0, threshold: Math.ceil(line), comparison: 1 }
+    ? { statKeyA: a, periodA: P_FINAL, useTwoStats: true, statKeyB: b, periodB: P_FINAL, op: 0, threshold: Math.ceil(line), comparison: 1 }
     // steamed OVER L.5   ⇒  total > floor(L)
-    : { statKeyA: a, periodA: P_FT, useTwoStats: true, statKeyB: b, periodB: P_FT, op: 0, threshold: Math.floor(line), comparison: 0 };
+    : { statKeyA: a, periodA: P_FINAL, useTwoStats: true, statKeyB: b, periodB: P_FINAL, op: 0, threshold: Math.floor(line), comparison: 0 };
 }
 
 export function duelPda(fixtureId, seed) {
@@ -111,8 +116,34 @@ function dailyScoresPda(minTimestamp) {
   return PublicKey.findProgramAddressSync([Buffer.from("daily_scores_roots"), buf], TXORACLE_PROGRAM_ID)[0];
 }
 
+// Discover the final CONSOLIDATED proof seq for a fixture: the highest seq,
+// provided its record has reached the terminal period (0). Returns null while
+// the fixture is still consolidating — the settle loop just retries later.
+export async function discoverFinalSeq(fixtureId) {
+  const get = async (seq) => {
+    try { return await fetchProof(fixtureId, seq, 1); } catch { return null; }
+  };
+  let hit = null;
+  for (const s of [64, 256, 1024, 4096, 16384]) if (await get(s)) hit = s; // any record?
+  if (hit === null) return null;
+  // binary search the highest valid seq in [hit, hit*4+64]
+  let lo = hit, top = hit * 4 + 64;
+  while (lo < top) {
+    const mid = Math.floor((lo + top + 1) / 2);
+    if (await get(mid)) lo = mid; else top = mid - 1;
+  }
+  const finalRec = await get(lo);
+  if (!finalRec || finalRec.statToProve.period !== 0) return null; // not consolidated yet
+  return lo;
+}
+
 // Settle an on-chain duel with the real Merkle proof. Returns { sig, predicateTrue }.
+// If seq is null, the final record is discovered automatically.
 export async function settleDuelOnChain(duel, seq) {
+  if (seq == null) {
+    seq = await discoverFinalSeq(duel.fixtureId);
+    if (seq == null) throw new Error(`no proof records for fixture ${duel.fixtureId}`);
+  }
   const pred = duelPredicate(duel);
   const pda = new PublicKey(duel.duelKey);
 

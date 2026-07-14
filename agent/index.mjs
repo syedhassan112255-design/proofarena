@@ -130,14 +130,15 @@ async function settleTick() {
   if (!due.length) return;
   try {
     for (const duel of due.filter((d) => d.mode === "live" && d.duelKey)) {
-      const seq = feedSeq.get(duel.fixtureId);
-      if (seq == null) continue; // no feed data seen for this fixture yet
+      // settle from the final CONSOLIDATED record (period 0), discovered from
+      // the proof API directly — no dependency on stream uptime or restarts.
+      // discoverFinalSeq returns null until TxLINE archives the fixture.
       try {
         const { settleDuelOnChain } = await import("./chain.mjs");
-        const { sig, predicateTrue } = await settleDuelOnChain(duel, seq);
-        applyResult(duel, predicateTrue, sig, `onchain:seq${seq}`);
+        const { sig, predicateTrue } = await settleDuelOnChain(duel, null);
+        applyResult(duel, predicateTrue, sig, "onchain:consolidated");
       } catch (e) {
-        log(`settle on-chain failed for ${duel.duelKey} (will retry):`, e.message);
+        log(`settle deferred for ${duel.duelKey}:`, e.message);
       }
     }
     const paperDue = due.filter((d) => d.status === "open" && !(d.mode === "live" && d.duelKey));

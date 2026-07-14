@@ -9,9 +9,17 @@ other on live TxLINE World Cup odds — every duel committed to Solana *before k
 every winner decided by a cryptographic Merkle proof of the real match. No human input.
 No editable history. Not even ours.**
 
+[![CI](https://github.com/syedhassan112255-design/proofarena/actions/workflows/ci.yml/badge.svg)](https://github.com/syedhassan112255-design/proofarena/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Solana](https://img.shields.io/badge/Solana-devnet-9945FF)](https://explorer.solana.com/address/6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L?cluster=devnet)
+[![Anchor](https://img.shields.io/badge/Anchor-0.31.1-blue)](program/Anchor.toml)
+
+**[🔴 Live arena](https://proofarena-live.vercel.app)** ·
 **[⚙️ Program on Explorer](https://explorer.solana.com/address/6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L?cluster=devnet)** ·
 **[📄 Strategy math](agent/strategy.mjs)** ·
-**[🏟️ Sister project: ProofBall](https://github.com/syedhassan125/proofball)**
+**[🏟️ Sister project: ProofBall](https://github.com/syedhassan112255-design/proofball)**
+
+[![The arena](docs/media/shot-hero.png)](https://proofarena-live.vercel.app)
 
 </div>
 
@@ -40,6 +48,29 @@ ProofArena makes that impossible — by construction:
    published daily root. Exactly one agent is right, every time.
 5. **Append-only.** The program has no instruction to amend or delete a duel. Losses cannot
    be buried. Over 104 World Cup matches, the better philosophy wins — provably.
+
+## The loop, proven on-chain
+
+Not a diagram — actual devnet transactions you can open right now:
+
+| Step | Proof |
+|------|-------|
+| Duel committed (both positions, pre-kickoff gate) | [`5BMrGF2f…44Ni`](https://explorer.solana.com/tx/5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni?cluster=devnet) |
+| Settled by Merkle proof (`settle_duel` → CPI `validate_stat`) | [`5yUSVU9L…vEXU`](https://explorer.solana.com/tx/5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU?cluster=devnet) — both programs in the logs |
+| The duel account, settled state | [`ADmWjf4s…6xgR`](https://explorer.solana.com/address/ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR?cluster=devnet) |
+| Live agents feeding the arena | [proofarena-live.vercel.app](https://proofarena-live.vercel.app) — header reads "agents live · live mode" |
+
+And the uncomfortable part we kept public: two early duels pinned a predicate encoding
+that a mid-tournament TxLINE feed change made unprovable. They're marked **NO CONTEST**
+on the arena — the append-only design means our mistakes are as permanent as our wins.
+Full story in [`docs/FEEDBACK.md`](docs/FEEDBACK.md).
+
+## The arena
+
+| | |
+|:---:|:---:|
+| **Tale of the tape** — live bankroll race | **The fight card** — every duel, with its receipts |
+| [![Tape](docs/media/shot-tape.png)](https://proofarena-live.vercel.app) | [![Bouts](docs/media/shot-bouts.png)](https://proofarena-live.vercel.app) |
 
 ## Architecture
 
@@ -73,7 +104,8 @@ flowchart LR
 | [`agent/index.mjs`](agent/index.mjs) | The autonomous loop: evaluate → duel → commit on-chain → settle by proof. Public state API for the dashboard |
 | [`agent/chain.mjs`](agent/chain.mjs) | On-chain lifecycle: `commit_duel` + `settle_duel` with real Merkle proofs |
 | [`program/`](program/) | The Anchor program (devnet [`6iDo9DXU…gD5L`](https://explorer.solana.com/address/6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L?cluster=devnet)): duel PDAs, pre-kickoff commitment gate, `validate_stat` CPI settlement |
-| [`site/`](site/) | The fight-card dashboard: live bankroll race, duel ledger with Explorer links for every commitment and settlement |
+| [`site/`](site/) | The fight-card dashboard ([live](https://proofarena-live.vercel.app)): bankroll race, duel ledger with Explorer links for every commitment and settlement |
+| [`docs/`](docs/) | [Technical deep-dive](docs/TECHNICAL.md) · [TxLINE API feedback](docs/FEEDBACK.md) · [submission pack](docs/SUBMISSION.md) |
 
 ## Why you can trust the scoreboard
 
@@ -100,7 +132,7 @@ cd site && python3 -m http.server 8891   # → http://localhost:8891
 ```
 
 TxLINE access (`.env.txline`) comes from the guest-auth → on-chain subscribe → activate flow;
-see the [ProofBall access walkthrough](https://github.com/syedhassan125/proofball/tree/main/access).
+see the [ProofBall access walkthrough](https://github.com/syedhassan112255-design/proofball/tree/main/access).
 
 ## Built for the TxLINE agentic track
 
