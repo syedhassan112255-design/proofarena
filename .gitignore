@@ -8,5 +8,3 @@ out/
 dist/
 target/
 .DS_Store
-site/assets/*.mp4
-site/assets/*.jpg

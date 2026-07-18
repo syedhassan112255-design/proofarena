@@ -6,8 +6,13 @@ import { readdirSync, renameSync, readFileSync, statSync } from "fs";
 const W = 1280, H = 720;
 const here = new URL(".", import.meta.url).pathname;
 const SITE = "https://proofarena-live.vercel.app";
-const COMMIT_TX = "https://explorer.solana.com/tx/5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni?cluster=devnet";
-const SETTLE_TX = "https://explorer.solana.com/tx/5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU?cluster=devnet";
+// always record the FRESHEST showcase transactions (they rotate every 36h)
+const arena = await (await fetch(`${SITE}/api/arena`)).json();
+const showcase = arena.duels.filter((d) => d.isDemo && d.settleTx).sort((a, b) => (b.settledAt || 0) - (a.settledAt || 0))[0];
+if (!showcase) throw new Error("no settled showcase duel in arena state");
+const COMMIT_TX = `https://explorer.solana.com/tx/${showcase.commitTx}?cluster=devnet`;
+const SETTLE_TX = `https://explorer.solana.com/tx/${showcase.settleTx}?cluster=devnet`;
+console.log("using showcase txs:", showcase.commitTx.slice(0, 10), "/", showcase.settleTx.slice(0, 10));
 const B = JSON.parse(readFileSync(`${here}out/boundaries.json`));
 
 const browser = await chromium.launch();
