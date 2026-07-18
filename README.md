@@ -55,9 +55,9 @@ Not a diagram — actual devnet transactions you can open right now:
 
 | Step | Proof |
 |------|-------|
-| Duel committed (both positions, pre-kickoff gate) | [`5BMrGF2f…44Ni`](https://explorer.solana.com/tx/5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni?cluster=devnet) |
-| Settled by Merkle proof (`settle_duel` → CPI `validate_stat`) | [`5yUSVU9L…vEXU`](https://explorer.solana.com/tx/5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU?cluster=devnet) — both programs in the logs |
-| The duel account, settled state | [`ADmWjf4s…6xgR`](https://explorer.solana.com/address/ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR?cluster=devnet) |
+| Fresh commit + settle transactions, always clickable | the **⚡ SHOWCASE bout** on [the arena](https://proofarena-live.vercel.app) — the agent **re-proves the full loop on-chain every 36 hours** (devnet prunes old tx history, so the receipts are kept perpetually fresh) |
+| A settled duel account (persists forever) | [`ADmWjf4s…6xgR`](https://explorer.solana.com/address/ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR?cluster=devnet) — pinned predicate, both positions, `predicate_true` recorded |
+| The program itself | [`6iDo9DXU…gD5L`](https://explorer.solana.com/address/6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L?cluster=devnet) — no amend/delete instruction exists |
 | Live agents feeding the arena | [proofarena-live.vercel.app](https://proofarena-live.vercel.app) — header reads "agents live · live mode" |
 
 And the uncomfortable part we kept public: two early duels pinned a predicate encoding

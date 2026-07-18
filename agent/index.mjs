@@ -146,9 +146,47 @@ async function settleTick() {
       const { settleDuels } = await import("./settle.mjs");
       await settleDuels(paperDue, state, { mode: MODE, env, log, applyResult });
     }
+    if (MODE === "live") await maybeRefreshShowcase();
     save();
   } catch (e) {
     log("settle pass failed:", e.message);
+  }
+}
+
+// Devnet prunes transaction history after a few days, which would rot the
+// showcase bout's Explorer links. So the agent re-proves the full loop on a
+// fresh duel every 36h: commit + settle on the archived consolidated fixture
+// (France v Morocco, seq 1115). Only the newest showcase is kept in state —
+// the on-chain accounts all persist regardless.
+const SHOWCASE_EVERY_MS = 36 * 3600_000;
+async function maybeRefreshShowcase() {
+  const latest = state.duels.filter((d) => d.isDemo).sort((a, b) => (b.settledAt || 0) - (a.settledAt || 0))[0];
+  if (latest && Date.now() - (latest.settledAt || 0) < SHOWCASE_EVERY_MS) return;
+  try {
+    const { commitDuel, settleDuelOnChain } = await import("./chain.mjs");
+    const demo = {
+      templateKey: `18209181:SHOWCASE:${Date.now()}`,
+      fixtureId: 18209181,
+      template: { kind: "TOTAL_GOALS", line: 1.5 },
+      kickoff: Date.now() + 60 * 86400_000,
+      signal: { steamedSide: "over", consensusFrom: 0.62, consensusTo: 0.66, window: { points: 0, movePts: 0 } },
+      steamer: { label: "Over 1.5 total goals (France v Morocco · archived demo)", backsPredicate: true, oddsMilli: 1515, belief: 0.68, kellyRaw: 0.06, stake: 100 },
+      fader: { label: "Under 1.5 total goals (France v Morocco · archived demo)", backsPredicate: false, oddsMilli: 2941, belief: 0.38, kellyRaw: 0.05, stake: 60 },
+      openedAt: Date.now(), mode: "live", status: "open", isDemo: true,
+      commitTx: null, settleTx: null, predicateTrue: null,
+    };
+    demo.commitTx = await commitDuel(demo);
+    const { sig, predicateTrue } = await settleDuelOnChain(demo, 1115);
+    demo.predicateTrue = predicateTrue;
+    demo.status = "settled";
+    demo.settledAt = Date.now();
+    demo.settleTx = sig;
+    demo.settledVia = "onchain:seq1115:showcase-refresh";
+    state.duels = state.duels.filter((d) => !d.isDemo);
+    state.duels.push(demo);
+    log(`🔁 showcase re-proven: commit ${demo.commitTx.slice(0, 8)}… settle ${sig.slice(0, 8)}…`);
+  } catch (e) {
+    log("showcase refresh failed (will retry):", e.message);
   }
 }
 

@@ -18,8 +18,8 @@ by a Merkle-proof CPI into `validate_stat`. No human input. No editable history.
 | Demo video | ← paste YouTube/Loom link |
 | GitHub repo | https://github.com/syedhassan112255-design/proofarena |
 | Program (devnet) | `6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L` |
-| Proven commit tx | `5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni` |
-| Proven settle tx (CPI validate_stat) | `5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU` |
+| Settled duel account (persists) | `ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR` |
+| Fresh commit + settle txs | on the ⚡ SHOWCASE bout at proofarena-live.vercel.app — re-proven on-chain every 36h (devnet prunes old tx history) |
 | Tech docs | `docs/TECHNICAL.md` in repo |
 | API feedback | `docs/FEEDBACK.md` in repo |
 
@@ -71,8 +71,10 @@ cold-start blind. One `records?fixtureId=` index endpoint would remove most of t
 ## Judge walkthrough
 1. Open https://proofarena-live.vercel.app — the bankroll race and fight card are live
    state from the agents (the header shows "agents live · live mode").
-2. On the SHOWCASE bout, click "commit tx" and "settle tx" — see `commit_duel`, then
-   `settle_duel` CPI-ing into TxLINE `validate_stat` on Solana Explorer.
+2. On the ⚡ SHOWCASE bout, click "commit tx" and "settle tx" — see `commit_duel`, then
+   `settle_duel` CPI-ing into TxLINE `validate_stat` on Solana Explorer. (The agent
+   re-proves this loop on a fresh duel every 36 hours, so these links never go stale
+   even though devnet prunes transaction history.)
 3. On any duel, compare the on-chain `committed_at` with the fixture kickoff — every
    commitment precedes it. The program has no amend/delete instruction: read
    `program/programs/proofarena/src/lib.rs` (~330 lines).

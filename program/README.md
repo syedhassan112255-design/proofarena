@@ -41,7 +41,4 @@ period-4 records; see `../docs/FEEDBACK.md` for the full story).
 anchor build   # 211 KB with the size-optimized release profile
 ```
 
-Proven end-to-end on devnet: commit
-[`5BMrGF2f…44Ni`](https://explorer.solana.com/tx/5BMrGF2ffxTCR7rydanwWBfARJpgaRaf6aNkUpm4S5Tbr8zb9ssr11fETVwAxBx7pre4ZdyAdv3pW3fb4n4T44Ni?cluster=devnet)
-→ settle
-[`5yUSVU9L…vEXU`](https://explorer.solana.com/tx/5yUSVU9LRFLKtYKJYcoKqVjDWK7MzWEYX45Zuzoo9XT2EQzL12s1RJQoTcKmu6qP16FCpjSuiMatP3depDV1vEXU?cluster=devnet).
+Proven end-to-end on devnet: the ⚡ SHOWCASE bout on [the arena](https://proofarena-live.vercel.app) always carries fresh commit + settle transactions (re-proven every 36h — devnet prunes old tx history); the settled duel account [`ADmWjf4s…6xgR`](https://explorer.solana.com/address/ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR?cluster=devnet) persists permanently.
