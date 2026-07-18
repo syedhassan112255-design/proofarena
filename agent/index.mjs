@@ -127,7 +127,6 @@ async function openDuel(signal, fixture) {
 // PAPER mode / no on-chain key: grade against proof-backed reference markets.
 async function settleTick() {
   const due = state.duels.filter((d) => d.status === "open" && Date.now() > d.kickoff + 165 * 60_000);
-  if (!due.length) return;
   try {
     for (const duel of due.filter((d) => d.mode === "live" && d.duelKey)) {
       // settle from the final CONSOLIDATED record (period 0), discovered from
