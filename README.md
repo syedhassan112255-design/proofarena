@@ -15,6 +15,7 @@ No editable history. Not even ours.**
 [![Anchor](https://img.shields.io/badge/Anchor-0.31.1-blue)](program/Anchor.toml)
 
 **[🔴 Live arena](https://proofarena-live.vercel.app)** ·
+**[🎬 Demo video](https://youtu.be/lAoXfXiWNus)** ·
 **[⚙️ Program on Explorer](https://explorer.solana.com/address/6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L?cluster=devnet)** ·
 **[📄 Strategy math](agent/strategy.mjs)** ·
 **[🏟️ Sister project: ProofBall](https://github.com/syedhassan112255-design/proofball)**

@@ -4,17 +4,17 @@ import { writeFileSync } from "fs";
 import { execSync } from "child_process";
 
 const KEY = process.env.ELEVENLABS_KEY;
-const VOICE = process.env.VOICE_JON || "sB7vwSCyX0tQmU24cW2C";
+const VOICE = process.env.VOICE_OVERRIDE || "Myb1gsDenT3mlMlj7vib"; // user-chosen voice
 const MODEL = "eleven_multilingual_v2";
 const GAP = 0.6;
 
 const segments = [
-  "Every trading bot claims an amazing track record — and none of it can be verified. Logs get edited, losing trades disappear, backtests pose as live results. This is ProofArena: two autonomous agents whose track records cannot be faked — not even by their creator.",
-  "Both agents read the same live TxLINE feed — the demargined consensus odds. Agent A, the Steamer, treats sharp pre-match moves as smart money, and backs the move. Agent B, the Fader, treats them as overreactions, and takes the other side. Stakes are sized by the Kelly criterion from separate bankrolls, and the duel runs twenty-four seven with no human input.",
-  "What makes it honest is the chain itself. Every duel is committed to Solana before kickoff — the program rejects late entries using the blockchain's own clock. And settlement is not a database entry: it is a cryptographic Merkle proof of the real match statistic, verified on-chain by TxLINE's validate stat instruction.",
-  "Every bout comes with receipts. This duel's commitment transaction is on-chain, timestamped before the match. And here is the settlement: the program calls directly into TxLINE's validate stat — the proof verifies against the published daily root, and the winner is recorded forever. Anyone can audit it.",
-  "Even the failures stay. These two duels are marked no contest — a mid-tournament feed change made their predicates unprovable. They can never be deleted, because the program has no delete instruction. An unfakeable record keeps your losses as permanently as your wins.",
-  "Two machines. One feed. Only proof decides. ProofArena — built on TxLINE, live on Solana devnet, fully autonomous.",
+  "Hi. This is my submission for the TxLINE agentic track: ProofArena. Here's the thing... every trading bot out there claims some amazing track record, and none of it can actually be verified. Logs get edited, losing trades just... disappear, backtests get dressed up as live results. So I built two autonomous agents whose track records simply can't be faked — not even by me.",
+  "Alright, so — both agents read the exact same live TxLINE feed, the demargined consensus odds. Agent A, the Steamer, treats sharp pre-match moves as smart money — he backs the move. Agent B, the Fader... he thinks those moves are overreactions, so he takes the other side. Um — stakes are sized with the Kelly criterion, from separate bankrolls, and this whole thing runs twenty-four seven... with no human input at all.",
+  "Now, what makes it honest is... the chain itself. Every duel gets committed to Solana before kickoff — the program literally rejects late entries, using the blockchain's own clock. And settlement? That's not some database entry. It's a cryptographic Merkle proof of the real match statistic, verified on-chain by TxLINE's validate stat instruction.",
+  "And every bout comes with receipts. So this duel right here — its commitment transaction is on-chain, timestamped before the match. And... here's the settlement: the program calls straight into TxLINE's validate stat, the proof checks out against the published daily root, and the winner gets recorded... forever. Anyone can audit this.",
+  "Oh — and even the failures stay. These two duels are marked no contest... a mid-tournament feed change made their predicates unprovable. They can never be deleted because, well... the program has no delete instruction. An unfakeable record keeps your losses just as permanently as your wins.",
+  "Two machines. One feed. Only proof decides. This is ProofArena — built on TxLINE, fully autonomous. Thank you for listening.",
 ];
 
 async function tts(text, out) {
@@ -23,7 +23,7 @@ async function tts(text, out) {
     headers: { "xi-api-key": KEY, "Content-Type": "application/json" },
     body: JSON.stringify({
       text, model_id: MODEL,
-      voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.12, use_speaker_boost: true },
+      voice_settings: { stability: 0.35, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true },
     }),
   });
   if (!r.ok) throw new Error(`TTS ${r.status}: ${(await r.text()).slice(0, 200)}`);

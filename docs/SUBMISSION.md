@@ -15,7 +15,7 @@ by a Merkle-proof CPI into `validate_stat`. No human input. No editable history.
 | Field | Value |
 |---|---|
 | Live app | https://proofarena-live.vercel.app |
-| Demo video | ← paste YouTube/Loom link |
+| Demo video | https://youtu.be/lAoXfXiWNus |
 | GitHub repo | https://github.com/syedhassan112255-design/proofarena |
 | Program (devnet) | `6iDo9DXUcAdXhrdGWCVxuADDZHVdixHuutJPm1g5gD5L` |
 | Settled duel account (persists) | `ADmWjf4sHYRuoPcYEcntyaFoQqCDNjxCCr6ysWTp6xgR` |
